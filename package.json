@@ -1,0 +1,19 @@
+{
+  "name": "oklch-p3-gamut-sh",
+  "module": "index.ts",
+  "type": "module",
+  "private": true,
+  "devDependencies": {
+    "@biomejs/biome": "1.9.4",
+    "@types/bun": "latest"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  },
+  "dependencies": {
+    "@effect/platform": "^0.80.6",
+    "@effect/platform-bun": "^0.60.10",
+    "curvy": "^1.0.8",
+    "effect": "^3.14.6"
+  }
+}
