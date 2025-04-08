@@ -6,7 +6,8 @@
       "dependencies": {
         "@effect/platform": "^0.80.6",
         "@effect/platform-bun": "^0.60.10",
-        "curvy": "^1.0.8",
+        "colorjs.io": "^0.5.2",
+        "curvy": "^1.0.9",
         "effect": "^3.14.6",
       },
       "devDependencies": {
@@ -105,7 +106,9 @@
 
     "bun-types": ["bun-types@1.2.7", "", { "dependencies": { "@types/node": "*", "@types/ws": "*" } }, "sha512-P4hHhk7kjF99acXqKvltyuMQ2kf/rzIw3ylEDpCxDS9Xa0X0Yp/gJu/vDCucmWpiur5qJ0lwB2bWzOXa2GlHqA=="],
 
-    "curvy": ["curvy@1.0.8", "", {}, "sha512-j4JXWJNhWJVxo61N8AMoqBwrRT16pFeSjkh2+TDCxrQRXt2r4pLKYd0kKTXaQYJc4W5TdAfrSCVMH3Sak6ADqQ=="],
+    "colorjs.io": ["colorjs.io@0.5.2", "", {}, "sha512-twmVoizEW7ylZSN32OgKdXRmo1qg+wT5/6C3xu5b9QsWzSFAhHLn2xd8ro0diCsKfCj1RdaTP/nrcW+vAoQPIw=="],
+
+    "curvy": ["curvy@1.0.9", "", {}, "sha512-5L+Elko7SDu9UtlshUS8O19ZPe/c9RjcpPcv3NlKlQWzzyt9HvNu9YwVwoI5Q8VX8VioJORFT6M8UKfRcWOnuA=="],
 
     "detect-libc": ["detect-libc@1.0.3", "", { "bin": { "detect-libc": "./bin/detect-libc.js" } }, "sha512-pGjwhsmsp4kL2RTz08wcOlGN83otlqHeD/Z5T8GXZB+/YcpQ/dgo+lbU8ZsGxV0HIvqqxo9l7mqYwyYMD9bKDg=="],
 

@@ -13,7 +13,8 @@
   "dependencies": {
     "@effect/platform": "^0.80.6",
     "@effect/platform-bun": "^0.60.10",
-    "curvy": "^1.0.8",
+    "colorjs.io": "^0.5.2",
+    "curvy": "^1.0.9",
     "effect": "^3.14.6"
   }
 }

@@ -22,7 +22,19 @@
 			"recommended": true
 		}
 	},
+	"assists": {
+		"enabled": true,
+		"actions": {
+			"source": {
+				"useSortedKeys": "on"
+			}
+		}
+	},
 	"javascript": {
+		"assists": {
+			"enabled": true
+		},
+		"organizeImports": {},
 		"formatter": {
 			"quoteStyle": "single",
 			"semicolons": "asNeeded"

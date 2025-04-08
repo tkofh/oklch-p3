@@ -1,15 +1,3 @@
-# oklch-p3-gamut-sh
+# p3 gamut in oklch space using spherical harmonics
 
-To install dependencies:
-
-```bash
-bun install
-```
-
-To run:
-
-```bash
-bun run index.ts
-```
-
-This project was created using `bun init` in bun v1.2.8. [Bun](https://bun.sh) is a fast all-in-one JavaScript runtime.
+or at least, that's the goal. this is a work in progress.
