@@ -1,7 +1,12 @@
+import Color from 'colorjs.io'
 import * as Interval from 'curvy/interval'
+import * as Matrix4x4 from 'curvy/matrix4x4'
+import * as CubicPolynomial from 'curvy/polynomial/cubic'
+import * as Hermite2d from 'curvy/splines/hermite2d'
 import { mod, normalize, round } from 'curvy/utils'
 import * as Vector2 from 'curvy/vector2'
 import * as Vector3 from 'curvy/vector3'
+import * as Vector4 from 'curvy/vector4'
 import { Data, Effect, Hash, Option, Schema } from 'effect'
 import { generateSphere } from './icosahedron.ts'
 import { CacheStorage } from './storage.ts'
@@ -20,6 +25,40 @@ const triangleWave = Effect.fn(function* (n: number, passes: number) {
 	return 2 * Math.abs((n * passes) / 2 - Math.floor((n * passes) / 2 + 0.5))
 })
 
+function findMaxChroma(L: number, H: number, epsilon = 1e-12): number {
+	if (L < 0.125) {
+		const near = findMaxChroma(0.125, H, epsilon)
+		const far = findMaxChroma(0.15, H, epsilon)
+
+		const v = Vector2.subtract(
+			Vector2.make(0.125, near),
+			Vector2.make(0.15, far),
+		).pipe(Vector2.magnitude)
+
+		return Hermite2d.characteristic.pipe(
+			Matrix4x4.vectorProductLeft(Vector4.make(0, v / 2, near, v)),
+			CubicPolynomial.fromVector,
+			CubicPolynomial.solve(normalize(L, 0, 0.125)),
+		)
+	}
+
+	let low = 0
+	let high = 0.37
+	let bestC = 0
+
+	while (high - low > epsilon) {
+		const mid = (low + high) / 2
+		if (new Color('oklch', [L, mid, H * 360]).inGamut('p3')) {
+			bestC = mid
+			low = mid
+		} else {
+			high = mid
+		}
+	}
+
+	return bestC
+}
+
 export interface GenerateGamutOptions {
 	readonly subdivisions: number
 	readonly huePasses: number
@@ -30,18 +69,17 @@ export const generateGamut = Effect.fn(function* (
 	options: GenerateGamutOptions,
 ) {
 	const cache = (yield* CacheStorage).forSchema(
-		Schema.parseJson(
-			Schema.Array(
-				Schema.transform(
-					Schema.Tuple(Schema.Number, Schema.Number),
-					Schema.declare((input: unknown) => Vector2.isVector2(input)),
-					{
-						encode: (input: Vector2.Vector2) => [input.x, input.y] as const,
-						decode: (input: readonly [number, number]) =>
-							Vector2.make(...input),
-						strict: true,
-					},
-				),
+		Schema.Array(
+			Schema.transform(
+				Schema.Tuple(Schema.Number, Schema.Number, Schema.Number),
+				Schema.declare((input: unknown) => Vector3.isVector3(input)),
+				{
+					encode: (input: Vector3.Vector3) =>
+						[input.x, input.y, input.z] as const,
+					decode: (input: readonly [number, number, number]) =>
+						Vector3.make(...input),
+					strict: true,
+				},
 			),
 		),
 	)
@@ -60,16 +98,18 @@ export const generateGamut = Effect.fn(function* (
 		const theta = Vector3.getTheta(vertex)
 		const phi = Vector3.getPhi(vertex)
 
-		const hue = yield* triangleWave(
-			mod(phi, 2 * Math.PI) / (2 * Math.PI),
-			options.huePasses,
-		)
+		const hueInitial = mod(phi, 2 * Math.PI) / (2 * Math.PI)
+		const lightnessInitial = (1 - Math.cos(theta)) / 2
+
+		const hue = yield* triangleWave(hueInitial, options.huePasses)
 		const lightness = yield* triangleWave(
-			(1 - Math.cos(theta)) / 2,
+			lightnessInitial,
 			options.lightnessPasses,
 		)
 
-		result.push(Vector2.make(hue, lightness))
+		const chroma = findMaxChroma(lightness, hue)
+
+		result.push(Vector3.make(hueInitial, lightnessInitial, chroma))
 	}
 
 	yield* cache.set(cacheKey, result)
