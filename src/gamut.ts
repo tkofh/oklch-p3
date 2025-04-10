@@ -22,7 +22,7 @@ const triangleWave = Effect.fn(function* (n: number, passes: number) {
 		)
 	}
 
-	return 2 * Math.abs((n * passes) / 2 - Math.floor((n * passes) / 2 + 0.5))
+	return 2 * Math.abs(n * passes - Math.floor(n * passes + 0.5))
 })
 
 function findMaxChroma(L: number, H: number, epsilon = 1e-12): number {
@@ -36,7 +36,7 @@ function findMaxChroma(L: number, H: number, epsilon = 1e-12): number {
 		).pipe(Vector2.magnitude)
 
 		return Hermite2d.characteristic.pipe(
-			Matrix4x4.vectorProductLeft(Vector4.make(0, v / 2, near, v)),
+			Matrix4x4.vectorProductLeft(Vector4.make(0, 0, near, v)),
 			CubicPolynomial.fromVector,
 			CubicPolynomial.solve(normalize(L, 0, 0.125)),
 		)
@@ -109,7 +109,8 @@ export const generateGamut = Effect.fn(function* (
 
 		const chroma = findMaxChroma(lightness, hue)
 
-		result.push(Vector3.make(hueInitial, lightnessInitial, chroma))
+		result.push(Vector3.setR(vertex, 1 - chroma))
+		// result.push(Vector3.make(hueInitial, lightnessInitial, chroma))
 	}
 
 	yield* cache.set(cacheKey, result)
