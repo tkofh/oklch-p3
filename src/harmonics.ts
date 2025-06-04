@@ -1,6 +1,6 @@
 import { Effect } from 'effect'
 
-const factorial = Effect.fnUntraced(function* (n: number) {
+export const factorial = Effect.fnUntraced(function* (n: number) {
 	if (n < 0) {
 		yield* Effect.fail(new Error('n must be a non-negative integer'))
 	}
@@ -17,7 +17,7 @@ const factorial = Effect.fnUntraced(function* (n: number) {
 	return result
 })
 
-const doubleFactorial = Effect.fnUntraced(function* (n: number) {
+export const doubleFactorial = Effect.fnUntraced(function* (n: number) {
 	if (n < 0) {
 		yield* Effect.fail(new Error('n must be a non-negative integer'))
 	}
