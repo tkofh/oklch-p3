@@ -1,6 +1,8 @@
 import { Effect } from 'effect'
-import { writeGamut } from './gamut'
+import { gamut } from './gamut.ts'
 
 export const program = Effect.fn('program')(function* () {
-	yield* writeGamut()
+	const data = yield* gamut
+
+	yield* Effect.log(`Gamut data loaded with ${data.length} entries.`)
 })()

@@ -6,7 +6,7 @@ import * as Hermite2d from 'curvy/splines/hermite2d'
 import { normalize, round } from 'curvy/utils'
 import * as Vector2 from 'curvy/vector2'
 import * as Vector4 from 'curvy/vector4'
-import { Effect, Schema, Stream } from 'effect'
+import { Chunk, Effect, Schema, Stream } from 'effect'
 
 const lightness = Schema.Number.pipe(Schema.between(0, 1))
 const chroma = Schema.Number.pipe(Schema.greaterThanOrEqualTo(0))
@@ -67,13 +67,21 @@ class LightnessHue extends Schema.TaggedClass<LightnessHue>()('LightnessHue', {
 class LightnessChromaHue extends Schema.TaggedClass<LightnessChromaHue>()(
 	'LightnessChromaHue',
 	{ hue, lightness, chroma },
-) {}
+) {
+	toJson() {
+		return {
+			hue: this.hue,
+			lightness: this.lightness,
+			chroma: this.chroma,
+		}
+	}
+}
 
 export const writeGamut = Effect.fn(function* (
 	scaleHue = 4,
 	scaleLightness = 4,
 ) {
-	const values = yield* Stream.range(0, 360 * scaleHue - 1).pipe(
+	const chunk = yield* Stream.range(0, 360 * scaleHue - 1).pipe(
 		Stream.map((hue) => hue / scaleHue),
 		Stream.flatMap((hue) =>
 			Stream.range(0, 100 * scaleLightness).pipe(
@@ -89,17 +97,43 @@ export const writeGamut = Effect.fn(function* (
 				),
 			),
 		),
-		Stream.runFold('hue,lightness,chroma\n', (acc, lch) => {
-			if (Math.random() > 0.999) {
-				console.log(
-					`Hue: ${lch.hue}, Lightness: ${lch.lightness}, Chroma: ${lch.chroma}`,
-				)
-			}
-			return `${acc}${lch.hue},${lch.lightness},${lch.chroma}\n`
-		}),
+		Stream.tap((v) =>
+			Math.random() > 0.999 ? Effect.log(v.toJson()) : Effect.void,
+		),
+		Stream.runCollect,
 	)
 
 	const fs = yield* FileSystem.FileSystem
 
-	yield* fs.writeFileString('./gamut.csv', values)
+	yield* fs.writeFileString(
+		'./gamut.json',
+		chunk.pipe(
+			Chunk.map((x) => x.toJson()),
+			Chunk.toReadonlyArray,
+			JSON.stringify,
+		),
+	)
+})
+
+export const gamut = Effect.gen(function* () {
+	const fs = yield* FileSystem.FileSystem
+
+	const hasFile = yield* fs.exists('./gamut.json')
+	if (!hasFile) {
+		yield* writeGamut()
+	}
+
+	const data = yield* fs.readFileString('./gamut.json')
+
+	return yield* Schema.decode(
+		Schema.parseJson(
+			Schema.Array(
+				Schema.Struct({
+					hue: hue,
+					lightness: lightness,
+					chroma: chroma,
+				}),
+			),
+		),
+	)(data)
 })
