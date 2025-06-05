@@ -3,6 +3,9 @@
   "module": "index.ts",
   "type": "module",
   "private": true,
+  "scripts": {
+    "program": "bun ./src/entry.ts"
+  },
   "devDependencies": {
     "@biomejs/biome": "1.9.4",
     "@types/bun": "latest"
