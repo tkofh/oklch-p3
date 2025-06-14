@@ -1,11 +1,7 @@
 import { FileSystem } from '@effect/platform'
+import { BunFileSystem } from '@effect/platform-bun'
 import Color from 'colorjs.io'
-import * as Matrix4x4 from 'curvy/matrix4x4'
-import * as CubicPolynomial from 'curvy/polynomial/cubic'
-import * as Hermite2d from 'curvy/splines/hermite2d'
-import { normalize, round } from 'curvy/utils'
-import * as Vector2 from 'curvy/vector2'
-import * as Vector4 from 'curvy/vector4'
+import { roundDown } from 'curvy/utils'
 import { Chunk, Effect, Schema, Stream } from 'effect'
 
 const lightness = Schema.Number.pipe(Schema.between(0, 1))
@@ -23,28 +19,37 @@ class LightnessHue extends Schema.TaggedClass<LightnessHue>()('LightnessHue', {
 	}
 
 	static maxChroma(lh: LightnessHue): number {
-		if (lh.lightness < 0.125) {
-			const near = LightnessHue.maxChroma(LightnessHue.of(0.125, lh.hue))
-
-			return Hermite2d.characteristic.pipe(
-				Matrix4x4.vectorProductLeft(
-					Vector4.make(
-						0,
-						0,
-						near,
-						Vector2.subtract(
-							Vector2.make(0.125, near),
-							Vector2.make(
-								0.15,
-								LightnessHue.maxChroma(LightnessHue.of(0.15, lh.hue)),
-							),
-						).pipe(Vector2.magnitude),
-					),
-				),
-				CubicPolynomial.fromVector,
-				CubicPolynomial.solve(normalize(lh.lightness, 0, 0.125)),
-			)
-		}
+		// if (lh.lightness < 0.125) {
+		// 	const near = Vector2.make(
+		// 		0.125,
+		// 		LightnessHue.maxChroma(LightnessHue.of(0.125, lh.hue)),
+		// 	)
+		// 	const far = Vector2.make(
+		// 		0.25,
+		// 		LightnessHue.maxChroma(LightnessHue.of(0.25, lh.hue)),
+		// 	)
+		// 	const line = LinearPolynomial.fromPoints(near, far)
+		// 	const pos = line.pipe(LinearPolynomial.solve(-1))
+		//
+		// 	return Bezier2d.characteristic.pipe(
+		// 		Matrix4x4.vectorProductLeft(
+		// 			Vector4.make(
+		// 				0,
+		// 				0,
+		// 				near.y,
+		// 				Vector2.subtract(
+		// 					Vector2.make(x1, near),
+		// 					Vector2.make(
+		// 						x2,
+		// 						LightnessHue.maxChroma(LightnessHue.of(x2, lh.hue)),
+		// 					),
+		// 				).pipe(Vector2.magnitude),
+		// 			),
+		// 		),
+		// 		CubicPolynomial.fromVector,
+		// 		CubicPolynomial.solve(normalize(lh.lightness, 0, x1)),
+		// 	)
+		// }
 
 		let low = 0
 		let high = 0.37
@@ -60,7 +65,7 @@ class LightnessHue extends Schema.TaggedClass<LightnessHue>()('LightnessHue', {
 			}
 		}
 
-		return round(bestC)
+		return roundDown(bestC, 5)
 	}
 }
 
@@ -69,17 +74,13 @@ class LightnessChromaHue extends Schema.TaggedClass<LightnessChromaHue>()(
 	{ hue, lightness, chroma },
 ) {
 	toJson() {
-		return {
-			hue: this.hue,
-			lightness: this.lightness,
-			chroma: this.chroma,
-		}
+		return [this.hue, this.lightness, this.chroma]
 	}
 }
 
 export const writeGamut = Effect.fn(function* (
-	scaleHue = 4,
-	scaleLightness = 4,
+	scaleHue = 2,
+	scaleLightness = 20,
 ) {
 	const chunk = yield* Stream.range(0, 360 * scaleHue - 1).pipe(
 		Stream.map((hue) => hue / scaleHue),
@@ -115,25 +116,55 @@ export const writeGamut = Effect.fn(function* (
 	)
 })
 
-export const gamut = Effect.gen(function* () {
-	const fs = yield* FileSystem.FileSystem
+export class Gamut extends Effect.Service<Gamut>()('gamut', {
+	effect: Effect.gen(function* () {
+		const fs = yield* FileSystem.FileSystem
 
-	const hasFile = yield* fs.exists('./gamut.json')
-	if (!hasFile) {
-		yield* writeGamut()
-	}
+		const hasFile = yield* fs.exists('./gamut.json')
+		if (!hasFile) {
+			yield* writeGamut()
+		}
 
-	const data = yield* fs.readFileString('./gamut.json')
+		yield* Effect.log('Loading gamut...')
+		const data = yield* fs.readFileString('./gamut.json')
 
-	return yield* Schema.decode(
-		Schema.parseJson(
-			Schema.Array(
-				Schema.Struct({
-					hue: hue,
-					lightness: lightness,
-					chroma: chroma,
-				}),
+		yield* Effect.log('Gamut loaded. Decoding...')
+
+		return yield* Schema.decode(
+			Schema.parseJson(
+				Schema.Array(
+					Schema.transform(
+						Schema.Tuple(hue, lightness, chroma),
+						Schema.Struct({
+							hue: hue,
+							lightness: lightness,
+							chroma: chroma,
+						}),
+						{
+							decode: (arr) => ({
+								hue: arr[0],
+								lightness: arr[1],
+								chroma: arr[2],
+							}),
+							encode: ({ hue, lightness, chroma }) => [hue, lightness, chroma],
+							strict: false,
+						},
+					),
+				),
 			),
-		),
-	)(data)
-})
+		)(data)
+	}),
+	dependencies: [BunFileSystem.layer],
+}) {
+	static maxChroma(hue: number, lightness: number): number {
+		return LightnessHue.maxChroma(LightnessHue.of(lightness, hue))
+	}
+}
+
+export declare namespace Gamut {
+	export interface Point {
+		readonly hue: number
+		readonly lightness: number
+		readonly chroma: number
+	}
+}

@@ -1,24 +1,26 @@
 {
-  "name": "oklch-p3-gamut-sh",
-  "module": "index.ts",
-  "type": "module",
-  "private": true,
-  "scripts": {
-    "program": "bun ./src/entry.ts"
-  },
-  "devDependencies": {
-    "@biomejs/biome": "1.9.4",
-    "@types/bun": "latest"
-  },
-  "peerDependencies": {
-    "typescript": "^5"
-  },
-  "dependencies": {
-    "@effect/platform": "^0.80.6",
-    "@effect/platform-bun": "^0.60.10",
-    "colorjs.io": "^0.5.2",
-    "curvy": "^1.0.9",
-    "effect": "^3.14.6",
-    "ml-matrix": "^6.12.1"
-  }
+	"name": "oklch-p3-gamut-sh",
+	"module": "index.ts",
+	"type": "module",
+	"private": true,
+	"scripts": {
+		"program": "bun ./src/entry.ts"
+	},
+	"devDependencies": {
+		"@biomejs/biome": "1.9.4",
+		"@types/bun": "latest",
+		"@types/regression": "^2.0.6"
+	},
+	"peerDependencies": {
+		"typescript": "^5"
+	},
+	"dependencies": {
+		"@effect/platform": "^0.80.6",
+		"@effect/platform-bun": "^0.60.10",
+		"colorjs.io": "^0.5.2",
+		"curvy": "^1.0.9",
+		"effect": "^3.14.6",
+		"ml-matrix": "^6.12.1",
+		"regression": "^2.0.1"
+	}
 }
